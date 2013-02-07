@@ -1,0 +1,914 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+  <head>
+    <title>CalcBot</title>
+    <link href="/stylesheets/screen.css" media="all" rel="stylesheet" type="text/css"/>
+    <script language="javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js" type="text/javascript"></script><script language="javascript" src="javascripts/jquery.hotkeys.js" type="text/javascript"></script><script language="javascript" src="javascripts/key_status.js" type="text/javascript"></script><script language="javascript" src="javascripts/util.js" type="text/javascript"></script><script language="javascript" src="javascripts/sprite.js" type="text/javascript"></script><script language="javascript" src="javascripts/sound.js" type="text/javascript"></script>
+  </head>
+  <body>
+      <h1>CalcBot is not yet Rising</h1>
+    <script type="text/javascript">
+
+        // var definitions
+        var CANVAS_WIDTH = 500;
+        var CANVAS_HEIGHT = 500;
+        var FPS = 30;
+        var textX = 50;
+        var textY = 50;
+        var rowspeed = 1;
+        var rowscreated = false;
+        var score = 0;
+        var level = 1;
+        var newLevelText = true;
+        var newLevelX = 0;
+        var highScore = 0;
+        var gamestate = "menu";
+        birdbucket = Sprite("birdbucketlogo");
+        bullet = Sprite("misslemini");
+        banner = Sprite("banner");
+        lazer = Sprite("lazermini");
+
+
+
+
+        //canvas definitions
+        var canvasElement = $("<canvas width='" + CANVAS_WIDTH +
+          "' height='" + CANVAS_HEIGHT + "'></canvas");
+        var canvas = canvasElement.get(0).getContext("2d");
+        canvasElement.appendTo('body');
+
+        //definition of calcbot object
+        var calcbot = {
+            color: "#FF0000",
+            x: 220,
+            y: 270,
+            width: 25,
+            height: 25,
+            rising: false,
+            fuel: 200,
+            leftinventory: 1,
+            shotLeft: false,
+            leftCounter: 5,
+            rightinventory: 1,
+            shotRight: false,
+            rightCounter: 5,
+            lazerInventory: 1,
+            yVelocity: -5,
+            xVelocity: 0,
+            maxVelocity: 5,
+            maxFuel: 200,
+            fallingsprite: Sprite("calcbotnoflamemini2"),
+
+            risingsprite: Sprite("calcbotupmini2"),
+            landed: false,
+            onceiling: false,
+
+            
+
+            
+            
+            
+
+            draw: function () {
+                if (this.rising == true)
+                {
+                    this.risingsprite.draw(canvas, this.x, this.y);
+                }
+                else 
+                {
+                    this.fallingsprite.draw(canvas, this.x, this.y);
+                }
+
+
+            }
+        };
+
+        calcbot.shootMissle = function (side) {
+            var misslePosition = this.midpoint();
+            
+
+            if (side == "left")
+            {
+                misslePosition.x -= 25;
+            }
+            else
+            {
+                misslePosition.x += 15;
+            }
+                missles.push(Missle({
+                    speed: 10,
+                    x: misslePosition.x,
+                    y: misslePosition.y,
+                }));
+                
+            
+        };
+
+        calcbot.shootLazer = function () {
+            var lazerPosition = this.midpoint()
+            console.log("nud");
+
+            lazers.push(Lazer({
+                speed: 10,
+                x: lazerPosition.x,
+                y: lazerPosition.y,
+                originalX: lazerPosition.x,
+                originalY: lazerPosition.y,
+            }));
+
+
+        };
+
+        calcbot.reset = function () {
+            calcbot.x = 250;
+            calcbot.y = 0;
+            calcbot.xVelocity = 0;
+            calcbot.yVelocity = 0;
+            score = 0;
+            level = 1;
+            rowspeed = 1;
+            calcbot.leftinventory = 1;
+            calcbot.rightinventory = 1;
+            calcbot.lazerInventory = 1;
+            newLevelText = true;
+            calcbot.fuel = 200;
+            rows = rows.filter(function (Missle) {
+                return null;
+               
+            });
+            generateRows();
+        }
+
+        calcbot.midpoint = function () {
+            return {
+                x: this.x + this.width / 2,
+                y: this.y + this.height / 2,
+            };
+        }; 
+
+
+        //missles currently active
+        var missles = [];
+        var lazers = [];
+
+
+        var rows = [];
+
+
+
+        function Row(I) {
+            I = I || {};
+            I.holes = 3;
+            I.blocks = new Array("1", "1", "1", "0", "0", "0", "1", "1", "1", "1", "1", "1", "0", "0", "0", "1", "1", "1");
+            I.height = 12.5;
+            I.width = 25;
+            I.numOfBlocks = 20;
+            I.y;
+            I.active = true;
+            I.row = 1;
+            /*
+            block = Sprite("block"),
+            fuelblock = Sprite("fuelblock"),
+            badblock = Sprite("badblock"),
+            bulletblock = Sprite("bulletblock"),
+            */
+            block = Sprite("block2"),
+            fuelblock = Sprite("fuelblock2"),
+            badblock = Sprite("badblock2"),
+            bulletblock = Sprite("bulletblock2"),
+
+             I.draw = function () {
+                 
+                 for (var j = 0; j <= I.numOfBlocks; j++)
+                 {
+ 
+                     if (I.blocks[j] > 0 && I.blocks[j] != 10 && I.blocks[j] != 11 && I.blocks[j] != 12) {
+                         block.draw(canvas, (j * I.width), I.y);
+                     }
+                     else if (I.blocks[j] == 10) {
+                         fuelblock.draw(canvas, (j * I.width), I.y);
+                     }
+                     else if (I.blocks[j] == 12) {
+                         badblock.draw(canvas, (j * I.width), I.y);
+                     }
+                     else if (I.blocks[j] == 11) {
+                         bulletblock.draw(canvas, (j * I.width), I.y);
+                     }
+                         
+                 }
+                 
+
+             };
+
+            I.update = function () {
+                I.y += rowspeed;
+                if (I.y >= CANVAS_HEIGHT) {
+                    I.y = -5;
+                    //change blocks
+                    I.holes = 0;
+                    var i = 0;
+                    for (var i = 0; i <= I.numOfBlocks-1; i++)
+                    {
+                        if (I.holes < 3) {
+                            I.blocks[i] = Math.floor(Math.random() * 6);
+                            if (I.blocks[i] == 0) {
+                                I.holes++;
+                            }
+                        }
+                        else {
+                            I.blocks[i] = Math.floor(Math.random() * 3);
+
+                            I.blocks[i] = 1;
+                        }
+                        /*
+                        if (level == 2) {
+                            if (I.blocks[i] > 0) {
+                                I.blocks[i] = Math.floor(Math.random() * 10) + 1;
+                            }
+                        }
+                        else if (level == 3) {
+                            if (I.blocks[i] > 0) {
+                                I.blocks[i] = Math.floor(Math.random() * 11) + 1;
+                            }
+                        }
+                        
+                        else if (level >= 4) {
+                        */
+                            if (I.blocks[i] > 0) {
+                                I.blocks[i] = Math.floor(Math.random() * 12) + 1;
+                            }
+                        //}
+                    }
+                }  
+            };
+         return I;
+        }
+
+        //lazer object definition
+        function Lazer(I) {
+            I.active = true;
+            I.xVelocity = 0;
+            I.yVelocity = -7;
+            I.width = 5;
+            I.height = 0;
+          
+
+
+            I.checkCollision = function () {
+                rows.forEach(function (Row) {
+                    if ((Row.y + Row.height) - (I.y) < Row.width && (Row.y + Row.height) - (I.y) > -5) 
+                    {
+                        if ((Row.y + Row.height) - (I.y) < 8)
+                        {
+                            if (Row.blocks[parseInt((I.x + 5) / Row.width)] > 0) {
+                                Row.blocks[parseInt((I.x + 5) / Row.width)] = 0;
+                            }
+                        }
+                    }
+                })
+            };
+
+            I.draw = function () {
+                canvas.fillStyle = "#000 ";
+                canvas.moveTo(I.originalX,originalY);
+                canvas.lineTo(I.originalX+I.width, originalY);
+                canvas.lineTo(I.originalX+I.width, I.height);
+                canvas.lineTo(I.originalX, I.height);
+                canvas.stroke();
+                
+            };
+            I.inBounds = function () {
+                return I.x >= 0 && I.x <= CANVAS_WIDTH &&
+                  I.y >= 0 && I.y <= CANVAS_HEIGHT;
+            };
+
+
+            I.update = function () {
+                I.checkCollision();
+
+                I.x += I.xVelocity;
+                I.y += I.yVelocity;
+                I.height -= 7;
+
+                I.active = I.active && I.inBounds();
+            };
+
+            return I;
+        }
+            
+
+        //missle object definition
+        function Missle(I) {
+            I.active = true;
+
+            I.xVelocity = 0;
+            I.yVelocity = -I.speed;
+            I.width = 3;
+            I.height = 3;
+            I.color = "#000";
+            missleSprite = Sprite("misslemini"),
+
+
+            I.inBounds = function () {
+                return I.x >= 0 && I.x <= CANVAS_WIDTH &&
+                  I.y >= 0 && I.y <= CANVAS_HEIGHT;
+            };
+
+            I.checkCollision = function () {
+                var destroyed;
+
+
+                rows.forEach(function (Row) {
+                    console.log(Row.y);
+                    if ((Row.y + Row.height) - (I.y) < Row.width && (Row.y + Row.height) - (I.y) > -5) {
+                        console.log(Row.y);
+                        //console.log((calcbot.y + 60));
+
+
+
+                        if ((Row.y + Row.height) - (I.y) < 8) {
+
+                            if (Row.blocks[parseInt((I.x+5) / Row.width)] > 0) {
+                                Row.blocks[parseInt((I.x+5) / Row.width)] = 0;
+                                I.active = false;
+                            }
+                            
+                        }
+
+
+
+                    }
+                })
+
+
+
+            };
+
+            I.draw = function () {
+               missleSprite.draw(canvas, I.x, I.y);
+
+            };
+
+
+
+            I.update = function () {
+                I.checkCollision();
+                console.log("updated");
+
+                I.x += I.xVelocity;
+                I.y += I.yVelocity;
+
+                I.active = I.active && I.inBounds();
+            };
+
+            return I;
+        }
+        
+        
+
+
+
+        // main loogenerate
+        setInterval(function () {
+            if (rowscreated == false) {
+                generateRows();
+                rowscreated = true;
+            }
+            update();
+            draw();
+        }, 1000 / FPS);
+
+        //draw function
+        function draw() {
+            canvas.strokeStyle = "#000";
+
+            canvas.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            canvas.fillStyle = "#C0C0C0 "; // Set color to black
+            canvas.beginPath();
+            //Draw Background Square
+            canvas.moveTo(0, 0);
+            canvas.lineTo(CANVAS_WIDTH, 0);
+            canvas.lineTo(CANVAS_WIDTH, CANVAS_HEIGHT);
+            canvas.lineTo(0, CANVAS_HEIGHT);
+            canvas.closePath();
+            canvas.fill();
+            
+            
+
+            if (gamestate == "play") {
+
+
+
+
+
+                calcbot.draw();
+                missles.forEach(function (Missle) {
+                    Missle.draw();
+                });
+                rows.forEach(function (Row) {
+                    Row.draw();
+                });
+
+                birdbucket.draw(canvas, 440, 440);
+
+                if (calcbot.leftinventory)
+                {
+                    for (var i = 1; i <= calcbot.leftinventory; i++)
+                    {
+                    bullet.draw(canvas, 430, (10 + 10 * (i-1)));
+                    }
+                }
+                if (calcbot.rightinventory) {
+                    for (var i = 1; i <= calcbot.rightinventory; i++) {
+                        bullet.draw(canvas, 470, (10 + 10 * (i - 1)));
+                    }
+                }
+                if (calcbot.lazerInventory == 1) {
+                    lazer.draw(canvas, 450, 10);
+                }
+            }
+
+            //Draw Outline
+            canvas.lineWidth = 3;
+            canvas.moveTo(0, 0);
+            canvas.lineTo(CANVAS_WIDTH, 0);
+            canvas.lineTo(CANVAS_WIDTH, CANVAS_HEIGHT);
+            canvas.lineTo(0, CANVAS_HEIGHT);
+            canvas.lineTo(0, 0);
+            canvas.stroke();
+
+            if (gamestate == "menu") {
+                canvas.font = "50px sans-serif";
+                canvas.fillStyle = "#000 ";
+
+                canvas.fillText("CALCBOT RISING", 30, 50);
+
+                canvas.font = "40px sans-serif";
+                canvas.fillStyle = "#000 ";
+                canvas.fillText("Press SPACEBAR to Play", 20, 200);
+                canvas.fillText("Previous Score | High Score", 0, 350);
+                canvas.fillText(score, 100, 400);
+                canvas.fillText(highScore, 300, 400);
+           
+
+                canvas.closePath;
+                //banner.draw(canvas, 10, 240);
+                birdbucket.draw(canvas,440,440);
+
+
+
+            }
+            if (gamestate == "play")
+            {
+                if (newLevelText == true) {
+                    canvas.beginPath();
+                    canvas.font = "50px sans-serif";
+                    canvas.fillStyle = "#000 ";
+                    canvas.fillText("LEVEL" + level, newLevelX, 200);
+                    canvas.closePath();
+                }
+
+                canvas.beginPath();
+                canvas.font = "18px sans-serif";
+                canvas.fillStyle = "#000 ";
+                canvas.fillText("SCORE:", 10, 20);
+                canvas.fillText(score, 80, 20);
+                canvas.fillText("LEVEL:", 10, 50);
+                canvas.fillText(level, 80, 50);
+                canvas.closePath;
+                canvas.beginPath();
+
+                canvas.fillText("FUEL:", 150, 20);
+
+                canvas.moveTo(200, 10);
+                canvas.lineTo(400, 10);
+                canvas.lineTo(400, 20);
+                canvas.lineTo(200, 20);
+            
+                canvas.closePath();
+                canvas.stroke();
+
+                
+
+                lazers.forEach(function (Lazer) {
+                    
+                    //canvas.fillStyle = "#000 ";
+                    //canvas.moveTo(Lazer.originalX, originalY);
+                   // canvas.lineTo(Lazer.originalX + Lazer.width, Lazer.originalY);
+                   // canvas.lineTo(Lazer.originalX + Lazer.width, Lazer.height);
+                   // canvas.lineTo(Lazer.originalX, Lazer.height);
+                    //  canvas.stroke();
+                    if (Lazer.active) {
+                        canvas.beginPath();
+                        canvas.strokeStyle = "#FF0000";
+
+                        canvas.moveTo(Lazer.originalX, Lazer.originalY);
+                        canvas.lineTo(Lazer.originalX, Lazer.height + Lazer.originalY);
+                        canvas.closePath();
+                        canvas.stroke();
+
+                    }
+                    
+                    //console.log("hello world");
+
+                });
+             
+
+                canvas.beginPath();
+            canvas.lineWidth = 4;
+            canvas.strokeStyle = "#FFCC00";
+            canvas.moveTo(200, 15);
+            canvas.lineTo(calcbot.fuel +200, 15);
+            canvas.closePath();
+            canvas.stroke();
+            }
+            
+
+
+            canvas.draw
+        }
+
+        //todo update function
+
+
+
+        function generateRows() {
+            rows.push(Row({ y: 0 }));
+            rows.push(Row({ y: 100 }));
+            rows.push(Row({ y: 200 }));
+            rows.push(Row({ y: 300 }));
+            rows.push(Row({ y: 400 }));
+
+
+
+
+        }
+        function checkland() 
+        {
+           
+
+            rows.forEach(function (Row) {
+                if ((calcbot.y + calcbot.height) - Row.y < calcbot.height && (calcbot.y + calcbot.height) - Row.y > 1) {
+                  
+                        if (((calcbot.y + calcbot.height) - Row.y) < 10) {
+                  
+                            if ( Row.blocks[parseInt((calcbot.x +5)/Row.width)] > 0 )
+                            {
+                                calcbot.landed = true;
+                                calcbot.rising = false;
+                                calcbot.xVelocity = 0;
+                                calcbot.yVelocity = 0;
+
+                                calcbot.y = Row.y + -calcbot.height;
+                                if (Row.blocks[parseInt((calcbot.x + 5) / Row.width)] == 10) {
+                                    Row.blocks[parseInt((calcbot.x + 5) / Row.width)] = 1;
+                                    calcbot.fuel += 100;
+                                }
+                                if (Row.blocks[parseInt((calcbot.x + 5) / Row.width)] == 12) {
+                                    Row.blocks[parseInt((calcbot.x + 5) / Row.width)] = 1;
+                                    calcbot.fuel -= 100;
+                                }
+                                if (Row.blocks[parseInt((calcbot.x + 5) / Row.width)] == 11) {
+                                    Row.blocks[parseInt((calcbot.x + 5) / Row.width)] = 1;
+                                    calcbot.leftinventory += 1;
+                                    calcbot.rightinventory += 1;
+                                }
+                            }
+                            if (Row.blocks[parseInt(calcbot.x / Row.width) + 1] > 0 && (parseInt(calcbot.x / Row.width) * Row.width - calcbot.x + calcbot.width) < 40)
+                            {
+                                calcbot.landed = true;
+                                calcbot.rising = false;
+                                calcbot.xVelocity = 0;
+                                calcbot.yVelocity = 0;
+
+                                calcbot.y = Row.y + -calcbot.height +1;
+                                if (Row.blocks[parseInt((calcbot.x + 5) / Row.width) +1] == 10) {
+                                    Row.blocks[parseInt((calcbot.x + 5) / Row.width) +1] = 1;
+                                    calcbot.fuel += 100;
+                                }
+                                if (Row.blocks[parseInt((calcbot.x + 5) / Row.width) + 1] == 12) {
+                                    Row.blocks[parseInt((calcbot.x + 5) / Row.width) + 1] = 1;
+                                    calcbot.fuel -= 100;
+                                }
+                                if (Row.blocks[parseInt((calcbot.x + 5) / Row.width) + 1] == 11) {
+                                    Row.blocks[parseInt((calcbot.x + 5) / Row.width) + 1] = 1;
+                                    calcbot.leftinventory += 1;
+                                    calcbot.rightinventory += 1;
+                                }
+                            }
+
+                        }
+
+                    //}
+
+                }
+            });
+            
+        }
+
+        function checkceiling() {
+
+
+            rows.forEach(function (Row) {
+                if ((Row.y +Row.height) - (calcbot.y) < calcbot.height && (Row.y+Row.height) - (calcbot.y) > -5) {
+
+
+                    if (calcbot.rising == true) {
+                        if ((Row.y +Row.height) - (calcbot.y) < 5) {
+                           
+                            if (Row.blocks[parseInt((calcbot.x + 5) / Row.width)] > 0)
+                            {
+                                calcbot.yVelocity = 0; 
+                                calcbot.y = Row.y + Row.height-2 + rowspeed;
+                                calcbot.onceiling = true;
+                            }
+                            else if (Row.blocks[parseInt(calcbot.x / Row.width) + 1] > 0 && (parseInt(calcbot.x / Row.width) * Row.width - calcbot.x + calcbot.width) < calcbot.width -5) {
+                                calcbot.yVelocity = 0;
+                                calcbot.y = Row.y + Row.height - 2 + rowspeed;
+                                calcbot.onceiling = true;
+                                console.log("nud");
+                            }
+                        }
+
+                    }
+                    else{
+                        calcbot.onceiling = false;
+                    }
+
+                }
+            });
+
+        }
+
+        function checkwall() {
+
+            rows.forEach(function (Row) {
+                if ((Row.y) - (calcbot.y) < (calcbot.height - 5) && (Row.y ) - (calcbot.y) > 0) {
+
+                    //hitting on the right from above
+                    if (calcbot.xVelocity > 0) {
+                        if (Row.blocks[parseInt((calcbot.x +calcbot.width) / Row.width)] > 0) {
+                            calcbot.x -= 1;
+                            calcbot.xVelocity = 0;
+                        }
+                    }
+                    //hitting on the left from above
+
+                    if (calcbot.xVelocity < 0) {
+
+                        if (Row.blocks[parseInt((calcbot.x) / Row.width)] > 0) {
+                            calcbot.x -= calcbot.xVelocity;
+
+                            calcbot.xVelocity = 0;
+
+                        }
+                    }
+                }
+                else if ((Row.y) - (calcbot.y) < 0 && (Row.y) - (calcbot.y) > -Row.height) {
+
+                    //hitting on the right from below
+                    if (calcbot.xVelocity > 0) {
+                        if (Row.blocks[parseInt((calcbot.x +calcbot.width) / Row.width)] > 0) {
+                            calcbot.x -= 1;
+
+                            if (calcbot.yVelocity < 0) {
+                                calcbot.xVelocity = 0;
+                            }
+                        }
+                    }
+                    //hitting on the left from below
+
+                    if (calcbot.xVelocity < 0) {
+
+                        if (Row.blocks[parseInt((calcbot.x) / Row.width)] > 0) {
+                            calcbot.x +=1;
+
+                            if (calcbot.yVelocity < 0) {
+                                calcbot.xVelocity = 0;
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+
+      
+        function getBelowRow() {
+        }
+        function update() {
+
+            if (gamestate == "menu")
+            {
+                if (keydown.space) {
+                    gamestate = "play";
+                    calcbot.reset();
+                }
+
+
+
+            }
+            if (gamestate == "play") {
+                if (newLevelText == true) {
+                    newLevelX += 10;
+                    if (newLevelX >= CANVAS_WIDTH)
+                        newLevelText = false;
+                }
+                score++;
+                if (score % 500 == 0) {
+                    level++;
+                    newLevelText = true;
+                    newLevelX = -30;
+                    if (score % 1000 == 0) {
+                        rowspeed += .5;
+                    }
+                }
+
+
+                if (keydown.a) {
+                    if (calcbot.shotLeft == false) {
+                        if (calcbot.leftinventory >= 1) {
+                            calcbot.shootMissle("left");
+                            calcbot.leftinventory--;
+                            calcbot.shotLeft = true;
+
+                        }
+                    }
+                }
+                if (calcbot.shotLeft == true) {
+                    calcbot.leftCounter--;
+                    if (calcbot.leftCounter == 0) {
+                        calcbot.shotLeft = false;
+                        calcbot.leftCounter = 5;
+                    }
+                }
+                if (keydown.s) {
+                    
+                    if (calcbot.lazerInventory >= 1) {
+                        calcbot.shootLazer();
+                        calcbot.lazerInventory--;
+                    }
+                }
+                if (keydown.d) {
+                    if (calcbot.shotRight == false) {
+                        if (calcbot.rightinventory >= 1) {
+                            calcbot.shootMissle("right");
+                            calcbot.rightinventory--;
+                            calcbot.shotRight = true;
+
+                        }
+                    }
+                }
+                if (calcbot.shotRight == true) {
+                    calcbot.rightCounter--;
+                    if (calcbot.rightCounter == 0) {
+                        calcbot.shotRight = false;
+                        calcbot.rightCounter = 5;
+                    }
+                }
+
+                if (keydown.left) {
+                    if (calcbot.landed == false) {
+                        calcbot.xVelocity -= .5;
+                    }
+
+
+                    if (calcbot.xVelocity < -calcbot.maxVelocity) 
+                        {
+                        calcbot.xvelocity = (-(calcbot.maxVelocity));
+                    }
+                }
+               
+                if (keydown.right) {
+                    if (calcbot.landed == false) {
+
+                        calcbot.xVelocity += .5;
+                    }
+
+                   
+
+                }
+                console.log(calcbot.xVelocity);
+
+                if (calcbot.xVelocity >= calcbot.maxVelocity)
+                {
+                    calcbot.xVelocity = calcbot.maxVelocity;
+                }
+                if (calcbot.xVelocity <= -calcbot.maxVelocity) {
+                    calcbot.xVelocity = -calcbot.maxVelocity;
+                }
+                calcbot.x += calcbot.xVelocity;
+
+
+
+                if (keydown.up && calcbot.fuel > 0) {
+                    console.log(calcbot.fuel);
+                    console.log(calcbot.rising);
+                    if (calcbot.fuel > 40) {
+                        calcbot.landed = false;
+                        console.log("first if");
+                        calcbot.yVelocity -= .5;
+                        calcbot.rising = true;
+                        calcbot.fuel -= 3;
+                    }
+
+                    else if ((calcbot.fuel <= 40) && (calcbot.rising == true)) {
+                        console.log("second if");
+
+                        calcbot.yVelocity -= .5;
+                        calcbot.rising = true;
+                        calcbot.fuel -= 3;
+                    }
+                    else {
+                        console.log("third if");
+                        if (!calcbot.landed) {
+                            calcbot.yVelocity += .5;
+                        }
+                        else {
+                            calcbot.y += rowspeed;
+                        }
+                        calcbot.rising = false;
+                        calcbot.fuel += 1;
+
+                    }
+
+
+
+
+
+                }
+
+                else {
+                    if (calcbot.landed == true) {
+                        console.log("Landed!");
+                        calcbot.y += rowspeed;
+                        if (calcbot.fuel < 200) {
+                            calcbot.fuel += 1;
+                        }
+                    }
+                    else {
+                        calcbot.yVelocity += .5;
+                        calcbot.rising = false;
+                    }
+
+                }
+
+                if (calcbot.yVelocity > calcbot.maxVelocity)
+                    calcbot.yVelocity = calcbot.maxVelocity;
+                if (calcbot.yVelocity < -calcbot.maxVelocity)
+                    calcbot.yVelocity =  -calcbot.maxVelocity;
+
+                calcbot.y += calcbot.yVelocity;
+
+                if (calcbot.yVelocity > 0) {
+                    checkland();
+                }
+                if (calcbot.yVelocity < 0)
+                    calcbot.rising = true;
+                checkceiling();
+                if (calcbot.landed == false ) {
+                    checkwall();
+                }
+
+
+
+                63
+                calcbot.x = calcbot.x.clamp(0, CANVAS_WIDTH - calcbot.width);
+
+                if (calcbot.y + calcbot.height >= 500) {
+                    gamestate = "menu";
+                    if (score > highScore) {
+                        highScore = score;
+                    }
+                }
+
+                calcbot.y = calcbot.y.clamp(0, CANVAS_HEIGHT - calcbot.height);
+
+                missles.forEach(function (Missle) {
+                    Missle.update();
+                });
+                lazers.forEach(function (Lazer) {
+                    Lazer.update();
+                });
+
+                rows.forEach(function (Row) {
+                    Row.update();
+                });
+
+
+                missles = missles.filter(function (Missle) {
+                    return Missle.active;
+                });
+
+                if (calcbot.fuel < 0)
+                    calcbot.fuel = 0;
+                else if (calcbot.fuel >= calcbot.maxFuel)
+                    calcbot.fuel = calcbot.maxFuel;
+            }
+        }
+
+        
+    </script>
+
+</body>
+</html>
